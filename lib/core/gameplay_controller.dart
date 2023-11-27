@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:tic_tac_toe/core/exceptions/business_invariant.dart';
 import 'package:tic_tac_toe/core/gameplay.dart';
 import 'package:tic_tac_toe/core/player.dart';
 
@@ -31,9 +32,13 @@ final class GameplayController implements Gameplay {
 
   @override
   Player? makePlayerPace(int index) {
-    _makePace(index, Player.X);
-    _handleBotPace();
-    return _checkWinner();
+    try {
+      _makePace(index: index, player: Player.X);
+      _handleBotPace();
+      return _checkWinner();
+    } on BusinessInvariantException {
+      return null;
+    }
   }
 
   @override
@@ -47,13 +52,11 @@ final class GameplayController implements Gameplay {
     for (final record in winCombinations) {
       switch (record) {
         case (int a, int b, int c)
-            when [_matrix[a], _matrix[b], _matrix[c]]
-                .every((element) => element == Player.X):
+            when _checkRow(record: (a, b, c), player: Player.X):
           return Player.X;
 
         case (int a, int b, int c)
-            when [_matrix[a], _matrix[b], _matrix[c]]
-                .every((element) => element == Player.O):
+            when _checkRow(record: (a, b, c), player: Player.O):
           return Player.O;
       }
     }
@@ -61,7 +64,11 @@ final class GameplayController implements Gameplay {
     return null;
   }
 
-  void _makePace(int index, Player player) {
+  void _makePace({required int index, required Player player}) {
+    if (_matrix[index] is Player) {
+      throw BusinessInvariantException('This cell is already occupied');
+    }
+
     _matrix[index] = player;
   }
 
@@ -78,8 +85,15 @@ final class GameplayController implements Gameplay {
         continue;
       }
 
-      return _makePace(index, Player.O);
+      return _makePace(index: index, player: Player.O);
     }
+  }
+
+  bool _checkRow({required (int, int, int) record, required Player player}) {
+    final (int a, int b, int c) = record;
+
+    return [_matrix[a], _matrix[b], _matrix[c]]
+        .every((element) => element == player);
   }
 
   int? _getComputedCriticalPathIndex(

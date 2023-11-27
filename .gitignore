@@ -10,6 +10,7 @@
 .svn/
 migrate_working_dir/
 .github/
+deployment/
 
 # IntelliJ related
 *.iml
