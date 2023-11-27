@@ -66,39 +66,19 @@ final class GameplayController implements Gameplay {
   }
 
   void _handleBotPace() {
-    // Stage 1: Check if bot can win
-    var index = _getComputedCriticalPathIndex(player: Player.O);
-    if (index != null) {
-      _makePace(index, Player.O);
-      return;
-    }
+    for (final strategy in [
+      () => _getComputedCriticalPathIndex(player: Player.O),
+      () => _getComputedCriticalPathIndex(player: Player.X),
+      () => _getComputedCriticalPathIndex(player: Player.O, threshold: 1),
+      _getRandomIndex,
+    ]) {
+      final index = strategy();
 
-    // Stage 2: Check if bot can lose and prevent it
-    index = _getComputedCriticalPathIndex(player: Player.X);
-    if (index != null) {
-      _makePace(index, Player.O);
-      return;
-    }
-
-    // Stage 3: Check if bot can make a pace to win in next turn
-    index = _getComputedCriticalPathIndex(player: Player.O, threshold: 1);
-    if (index != null) {
-      _makePace(index, Player.O);
-      return;
-    }
-
-    // Stage 4
-    final List<int> result = _matrix.entries.fold([], (list, element) {
-      if (element.value == null) {
-        return [...list, element.key];
+      if (index == null) {
+        continue;
       }
 
-      return list;
-    })
-      ..shuffle();
-
-    if (result.isNotEmpty) {
-      _makePace(result.first, Player.O);
+      return _makePace(index, Player.O);
     }
   }
 
@@ -112,6 +92,20 @@ final class GameplayController implements Gameplay {
         return [a, b, c]
             .firstWhereOrNull((element) => _matrix[element] == null);
       }
+    }
+
+    return null;
+  }
+
+  int? _getRandomIndex() {
+    final List<int> result = _matrix.entries.fold(
+        [],
+        (list, element) =>
+            (element.value == null) ? [...list, element.key] : list)
+      ..shuffle();
+
+    if (result.isNotEmpty) {
+      return result.first;
     }
 
     return null;
